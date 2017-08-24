@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+	<bean id="securityManager" class="org.apache.shiro.web.mgt.DefaultWebSecurityManager">
+		<property name="cacheManager" ref="cacheManager"></property>
+		<property name="authenticator" ref="authenticator"></property>
+		<property name="realms">
+           <list>
+                <ref bean="jdbcRealm" />
+               <ref bean="secondRealm" />
+           </list>
+       </property>
+       <property name="rememberMeManager.cookie.maxAge" value="10"></property>
+	</bean>
+	<bean id="cacheManager" class="org.apache.shiro.cache.ehcache.EhCacheManager">
+        <property name="cacheManagerConfigFile" value="classpath:ehcache.xml"></property>
+	</bean>
+	
+	<bean id="authenticator" class="org.apache.shiro.authc.pam.ModularRealmAuthenticator">
+	   <property name="realms">
+	        <list>
+               <ref bean="jdbcRealm" />
+           </list>
+	   </property>
+	   <property name="authenticationStrategy">
+	       <bean class="org.apache.shiro.authc.pam.AtLeastOneSuccessfulStrategy"></bean>
+	   </property>
+	</bean>
+	<bean id="jdbcRealm" class="com.wjy.shiro.realms.ShiroRealm">
+	   <property name="credentialsMatcher">
+	       <bean class="org.apache.shiro.authc.credential.HashedCredentialsMatcher">
+	           <property name="hashAlgorithmName" value="MD5"></property>
+	           <property name="hashIterations" value="1024"></property>
+	       </bean>
+	   </property>
+	</bean>
+	
+	<bean id="secondRealm" class="com.wjy.shiro.realms.SecondRealm">
+	   <property name="credentialsMatcher">
+	       <bean class="org.apache.shiro.authc.credential.HashedCredentialsMatcher">
+	           <property name="hashAlgorithmName" value="SHA1"></property>
+	           <property name="hashIterations" value="1024"></property>
+	       </bean>
+	   </property>
+	</bean>
+	
+	<bean id="lifecycleBeanPostProcessor" class="org.apache.shiro.spring.LifecycleBeanPostProcessor" ></bean>
+	
+	<bean class="org.springframework.aop.framework.autoproxy.DefaultAdvisorAutoProxyCreator"></bean>
+	<bean class="org.apache.shiro.spring.security.interceptor.AuthorizationAttributeSourceAdvisor">
+	   <property name="securityManager" ref="securityManager"></property>
+	</bean>
+	
+	<bean id="shiroFilter" class="org.apache.shiro.spring.web.ShiroFilterFactoryBean" >
+	   <property name="securityManager" ref="securityManager"></property>
+	   <property name="loginUrl" value="/login.jsp"></property>
+	   <property name="successUrl" value="/list.jsp"></property>
+	   <property name="unauthorizedUrl" value="unauthorized.jsp"></property>
+	   <property name="filterChainDefinitionMap" ref="filterChainDefinitionsValue" ></property>
+	   <!-- <property name="filterChainDefinitions">
+	       <value>
+	           /login.jsp = anon
+	           /shiro/login = anon
+	           /shiro/logout = logout
+	           /admin.jsp = roles[admin]
+	           /user.jsp = roles[user]
+	           /** = authc
+	       </value>
+	   </property> -->
+	</bean>
+	
+	<bean id="shiroService" class="com.wjy.shiro.services.ShiroService"></bean>
+	
+	<bean id="filterChainDefinitionsValue" factory-bean="filterChainDefinitionMapperBuilder" factory-method="buildFilterChainDefinitionMap"></bean>
+	<bean id="filterChainDefinitionMapperBuilder" class="com.wjy.shiro.factory.FilterChainDefinitionMapperBuilder"></bean>
+</beans>
